@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Budget Tracker</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+:root{
+--lavender-main:#8f7ae5;
+--lavender-soft:#ece8ff;
+--lavender-light:#f7f5ff;
+--text-dark:#2f2f3a;
+}
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Segoe UI, sans-serif;
+}
+
+body{
+background:linear-gradient(135deg,#faf9ff,#f3f0ff);
+color:var(--text-dark);
+padding:20px;
+}
+
+.container{
+max-width:950px;
+margin:auto;
+background:white;
+border-radius:20px;
+box-shadow:0 20px 60px rgba(0,0,0,0.15);
+overflow:hidden;
+}
+
+.header{
+background:linear-gradient(135deg,#9a8af0,#b5a7ff);
+color:white;
+padding:40px;
+text-align:center;
+}
+
+.header h1{
+font-size:2.2rem;
+margin-bottom:5px;
+}
+
+.content{
+padding:25px;
+}
+
+input,select{
+padding:10px;
+border:2px solid #ddd;
+border-radius:8px;
+width:100%;
+}
+
+button{
+cursor:pointer;
+}
+
+.grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:15px;
+margin-bottom:20px;
+}
+
+.category-buttons{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:10px;
+}
+
+.category-btn{
+padding:10px;
+border:2px solid var(--lavender-soft);
+background:white;
+border-radius:8px;
+font-weight:600;
+}
+
+.category-btn.selected{
+background:var(--lavender-main);
+color:white;
+}
+
+.add-btn{
+width:100%;
+padding:12px;
+background:var(--lavender-main);
+color:white;
+border:none;
+border-radius:8px;
+font-weight:bold;
+margin-top:10px;
+}
+
+.stats{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:15px;
+margin:25px 0;
+}
+
+.stat{
+background:var(--lavender-light);
+padding:20px;
+border-radius:12px;
+text-align:center;
+}
+
+.stat h3{
+font-size:14px;
+color:#777;
+}
+
+.stat p{
+font-size:26px;
+font-weight:bold;
+color:var(--lavender-main);
+}
+
+.progress{
+height:18px;
+background:#ddd;
+border-radius:10px;
+overflow:hidden;
+margin-bottom:25px;
+}
+
+.progress-fill{
+height:100%;
+background:linear-gradient(90deg,#9a8af0,#b5a7ff);
+width:0%;
+}
+
+.expense-item{
+display:flex;
+justify-content:space-between;
+align-items:center;
+background:var(--lavender-light);
+padding:15px;
+border-radius:10px;
+margin-bottom:10px;
+}
+
+.actions button{
+margin-left:6px;
+padding:6px 10px;
+border:none;
+border-radius:6px;
+}
+
+.edit{
+background:#8f7ae5;
+color:white;
+}
+
+.delete{
+background:#e74c3c;
+color:white;
+}
+
+.controls{
+display:flex;
+gap:10px;
+margin-bottom:15px;
+}
+
+#chartContainer{
+margin-top:25px;
+}
+
+.dark{
+background:#1f1f2e;
+color:white;
+}
+
+.dark .container{
+background:#2b2b3d;
+}
+
+.dark .stat{
+background:#34344d;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+<h1>💰 Smart Budget Tracker</h1>
+<p>Track your spending intelligently</p>
+</div>
+
+<div class="content">
+
+<div class="grid">
+<input type="number" id="budget" placeholder="Monthly Budget" value="5000">
+<select id="currency">
+<option value="₹">₹ INR</option>
+<option value="$">$ USD</option>
+<option value="€">€ EUR</option>
+</select>
+</div>
+
+<div class="grid">
+<input type="text" id="name" placeholder="Expense name">
+<input type="number" id="amount" placeholder="Amount">
+</div>
+
+<div class="category-buttons">
+
+<button class="category-btn selected" data-cat="Food">🍔 Food</button>
+<button class="category-btn" data-cat="Travel">🚗 Travel</button>
+<button class="category-btn" data-cat="Shopping">🛍️ Shopping</button>
+<button class="category-btn" data-cat="Bills">📱 Bills</button>
+<button class="category-btn" data-cat="Entertainment">🎬 Fun</button>
+<button class="category-btn" data-cat="Other">📌 Other</button>
+
+</div>
+
+<button class="add-btn" onclick="addExpense()">Add Expense</button>
+
+<div class="stats">
+
+<div class="stat">
+<h3>Total Spent</h3>
+<p id="spent">0</p>
+</div>
+
+<div class="stat">
+<h3>Remaining</h3>
+<p id="remaining">0</p>
+</div>
+
+<div class="stat">
+<h3>Used</h3>
+<p id="percent">0%</p>
+</div>
+
+</div>
+
+<div class="progress">
+<div class="progress-fill" id="progress"></div>
+</div>
+
+<div class="controls">
+<input id="search" placeholder="Search expense">
+<select id="filter">
+<option value="All">All</option>
+<option value="Food">Food</option>
+<option value="Travel">Travel</option>
+<option value="Shopping">Shopping</option>
+<option value="Bills">Bills</option>
+<option value="Entertainment">Entertainment</option>
+<option value="Other">Other</option>
+</select>
+
+<button onclick="toggleTheme()">🌙</button>
+<button onclick="exportCSV()">Export</button>
+</div>
+
+<div id="list"></div>
+
+<div id="chartContainer">
+<canvas id="chart"></canvas>
+</div>
+
+</div>
+</div>
+
+<script>
+
+let expenses=JSON.parse(localStorage.getItem("expenses"))||[];
+let category="Food";
+let currency="₹";
+let chart;
+
+document.querySelectorAll(".category-btn").forEach(btn=>{
+btn.onclick=()=>{
+document.querySelectorAll(".category-btn").forEach(b=>b.classList.remove("selected"));
+btn.classList.add("selected");
+category=btn.dataset.cat;
+};
+});
+
+document.getElementById("currency").onchange=e=>{
+currency=e.target.value;
+updateUI();
+};
+
+function addExpense(){
+
+let name=document.getElementById("name").value;
+let amount=parseFloat(document.getElementById("amount").value);
+
+if(!name||!amount)return alert("Enter details");
+
+expenses.push({
+id:Date.now(),
+name,
+amount,
+category,
+date:new Date().toLocaleDateString()
+});
+
+save();
+updateUI();
+
+document.getElementById("name").value="";
+document.getElementById("amount").value="";
+}
+
+function deleteExpense(id){
+expenses=expenses.filter(e=>e.id!==id);
+save();
+updateUI();
+}
+
+function save(){
+localStorage.setItem("expenses",JSON.stringify(expenses));
+}
+
+function updateUI(){
+
+let budget=parseFloat(document.getElementById("budget").value)||0;
+
+let search=document.getElementById("search").value.toLowerCase();
+let filter=document.getElementById("filter").value;
+
+let filtered=expenses.filter(e=>
+(filter==="All"||e.category===filter)&&
+e.name.toLowerCase().includes(search)
+);
+
+let total=expenses.reduce((s,e)=>s+e.amount,0);
+
+document.getElementById("spent").textContent=currency+total.toFixed(2);
+document.getElementById("remaining").textContent=currency+(budget-total).toFixed(2);
+
+let percent=Math.round((total/budget)*100)||0;
+
+document.getElementById("percent").textContent=percent+"%";
+
+document.getElementById("progress").style.width=Math.min(percent,100)+"%";
+
+let list=document.getElementById("list");
+
+list.innerHTML=filtered.map(e=>`
+<div class="expense-item">
+<div>
+<strong>${e.name}</strong><br>
+<small>${e.category} • ${e.date}</small>
+</div>
+
+<div>
+${currency}${e.amount.toFixed(2)}
+</div>
+
+<div class="actions">
+<button class="delete" onclick="deleteExpense(${e.id})">Delete</button>
+</div>
+
+</div>
+`).join("");
+
+renderChart();
+}
+
+function renderChart(){
+
+let totals={};
+
+expenses.forEach(e=>{
+totals[e.category]=(totals[e.category]||0)+e.amount;
+});
+
+let labels=Object.keys(totals);
+let data=Object.values(totals);
+
+if(chart)chart.destroy();
+
+chart=new Chart(document.getElementById("chart"),{
+type:"doughnut",
+data:{
+labels,
+datasets:[{
+data,
+backgroundColor:[
+"#9a8af0",
+"#b5a7ff",
+"#d6ccff",
+"#c2b6ff",
+"#a69cf4",
+"#e5e0ff"
+]
+}]
+}
+});
+}
+
+function exportCSV(){
+
+let csv="Name,Category,Amount,Date\n";
+
+expenses.forEach(e=>{
+csv+=`${e.name},${e.category},${e.amount},${e.date}\n`;
+});
+
+let blob=new Blob([csv]);
+let a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="expenses.csv";
+a.click();
+}
+
+function toggleTheme(){
+document.body.classList.toggle("dark");
+}
+
+document.getElementById("search").oninput=updateUI;
+document.getElementById("filter").onchange=updateUI;
+document.getElementById("budget").onchange=updateUI;
+
+updateUI();
+
+</script>
+
+</body>
+</html>
